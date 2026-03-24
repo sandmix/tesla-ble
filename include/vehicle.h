@@ -5,6 +5,7 @@
 #include "universal_message.pb.h"
 #include "message_processor.h"
 #include "command_error.h"
+#include "message_builders.h"
 
 #include <memory>
 #include <functional>
@@ -136,6 +137,10 @@ class Vehicle {
   void set_bioweapon_mode(bool enable);
   void set_preconditioning_max(bool enable);  // Defrost
   void set_steering_wheel_heat(bool enable);
+  // seat_position: 0=FrontLeft(driver), 1=FrontRight(passenger), 2=RearLeft, 3=RearCenter, 4=RearRight
+  // level: 0=Off, 1=Low, 2=Med, 3=High
+  void set_seat_heater(int seat_position, int level);
+  void set_seat_cooler(int seat_position, int level);
 
   // Vehicle controls (infotainment)
   void flash_lights();
@@ -143,6 +148,7 @@ class Vehicle {
   void set_sentry_mode(bool enable);
   void vent_windows();
   void close_windows();
+  void set_media_volume(float volume);  // 0.0 - 11.0
 
   // Pairing & Auth
   void pair(Keys_Role role = Keys_Role_ROLE_OWNER);

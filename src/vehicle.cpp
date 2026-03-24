@@ -1197,6 +1197,32 @@ void TeslaBLE::Vehicle::set_steering_wheel_heat(bool enable) {
                             CarServer_VehicleAction_hvacSteeringWheelHeaterAction_tag, enable);
 }
 
+void TeslaBLE::Vehicle::set_seat_heater(int seat_position, int level) {
+  const char *seat_names[] = {"Driver", "Passenger", "Rear Left", "Rear Center", "Rear Right"};
+  std::string name = std::string("Seat Heat ") +
+                     (seat_position >= 0 && seat_position <= 4 ? seat_names[seat_position] : "Unknown") +
+                     " Level " + std::to_string(level);
+  SeatHeaterParams params{seat_position, level};
+  send_command(UniversalMessage_Domain_DOMAIN_INFOTAINMENT, name,
+               [params](Client *client, uint8_t *buff, size_t *len) {
+                 return client->build_car_server_vehicle_action_message(
+                     buff, len, CarServer_VehicleAction_remoteSeatHeaterRequest_tag, &params);
+               });
+}
+
+void TeslaBLE::Vehicle::set_seat_cooler(int seat_position, int level) {
+  const char *seat_names[] = {"Driver", "Passenger", "Rear Left", "Rear Center", "Rear Right"};
+  std::string name = std::string("Seat Cool ") +
+                     (seat_position >= 0 && seat_position <= 4 ? seat_names[seat_position] : "Unknown") +
+                     " Level " + std::to_string(level);
+  SeatHeaterParams params{seat_position, level};
+  send_command(UniversalMessage_Domain_DOMAIN_INFOTAINMENT, name,
+               [params](Client *client, uint8_t *buff, size_t *len) {
+                 return client->build_car_server_vehicle_action_message(
+                     buff, len, CarServer_VehicleAction_remoteSeatCoolerRequest_tag, &params);
+               });
+}
+
 // =============================================================================
 // Vehicle Controls (Infotainment)
 // =============================================================================
@@ -1220,6 +1246,10 @@ void TeslaBLE::Vehicle::vent_windows() {
 
 void TeslaBLE::Vehicle::close_windows() {
   send_infotainment_action_("Close Windows", CarServer_VehicleAction_vehicleControlWindowAction_tag, 1);
+}
+
+void TeslaBLE::Vehicle::set_media_volume(float volume) {
+  send_infotainment_action_("Set Volume", CarServer_VehicleAction_mediaSendUpdateVolume_tag, volume);
 }
 
 // =============================================================================

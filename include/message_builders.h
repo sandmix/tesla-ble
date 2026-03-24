@@ -55,6 +55,9 @@ class VehicleActionBuilder {
   static int build_hvac_bioweapon_mode(CarServer_VehicleAction &action, const void *data);
   static int build_vehicle_control_schedule_software_update(CarServer_VehicleAction &action, const void *data);
   static int build_set_cabin_overheat_protection(CarServer_VehicleAction &action, const void *data);
+  static int build_remote_seat_heater_request(CarServer_VehicleAction &action, const void *data);
+  static int build_remote_seat_cooler_request(CarServer_VehicleAction &action, const void *data);
+  static int build_media_send_update_volume(CarServer_VehicleAction &action, const void *data);
 
   // Map of action types to their builder functions
   static const std::unordered_map<pb_size_t, BuilderFunction> BUILDERS;
@@ -63,6 +66,14 @@ class VehicleActionBuilder {
   static int validate_input_parameters(const pb_byte_t *output_buffer, const size_t *output_length);
   static int validate_charging_limit(int32_t percent);
   static int validate_charging_amps(int32_t amps);
+};
+
+/**
+ * @brief Parameters for seat heater/cooler requests (need 2 values)
+ */
+struct SeatHeaterParams {
+  int seat_position;  // 0=FrontLeft(driver), 1=FrontRight(passenger), 2=RearLeft, 3=RearCenter, 4=RearRight
+  int level;          // 0=Off, 1=Low, 2=Med, 3=High
 };
 
 /**
@@ -75,6 +86,9 @@ class ParameterValidator {
   static bool is_valid_ping_value(int32_t ping_value);
   static bool is_valid_vin(const char *vin);
   static bool is_valid_connection_id(const pb_byte_t *connection_id);
+  static bool is_valid_seat_position(int seat_position);
+  static bool is_valid_seat_level(int level);
+  static bool is_valid_volume(float volume);
 };
 
 }  // namespace TeslaBLE

@@ -149,6 +149,25 @@ class Vehicle {
   void vent_windows();
   void close_windows();
   void set_media_volume(float volume);  // 0.0 - 11.0
+  void media_play();
+  void media_next_track();
+  void media_previous_track();
+  void media_next_favorite();
+  void media_previous_favorite();
+
+  // Cabin & protection controls (infotainment)
+  void set_cabin_overheat_protection(bool enable, bool fan_only);
+  void schedule_charging(bool enable, uint32_t scheduled_time);  // scheduled_time: minutes since midnight
+
+  // Software update controls (infotainment)
+  void schedule_software_update(int32_t offset_sec);
+  void cancel_software_update();
+
+  // PIN & security controls (infotainment)
+  void reset_valet_pin();
+  void reset_pin_to_drive();
+  void reset_pin_to_drive_admin();
+  void clear_speed_limit_pin_admin();
 
   // Pairing & Auth
   void pair(Keys_Role role = Keys_Role_ROLE_OWNER);

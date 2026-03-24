@@ -38,6 +38,9 @@ static int build_vehicle_control_reset_valet_pin(CarServer_VehicleAction &action
 static int build_vehicle_control_reset_pin_to_drive(CarServer_VehicleAction &action, const void *data);
 static int build_driving_clear_speed_limit_pin_admin(CarServer_VehicleAction &action, const void *data);
 static int build_vehicle_control_reset_pin_to_drive_admin(CarServer_VehicleAction &action, const void *data);
+static int build_remote_seat_heater_request(CarServer_VehicleAction &action, const void *data);
+static int build_remote_seat_cooler_request(CarServer_VehicleAction &action, const void *data);
+static int build_media_send_update_volume(CarServer_VehicleAction &action, const void *data);
 
 namespace {
 template<typename T> const T *require_data(const void *data, const char *message) {
@@ -82,7 +85,10 @@ const std::unordered_map<pb_size_t, VehicleActionBuilder::BuilderFunction> Vehic
     {CarServer_VehicleAction_hvacBioweaponModeAction_tag, build_hvac_bioweapon_mode},
     {CarServer_VehicleAction_vehicleControlScheduleSoftwareUpdateAction_tag,
      build_vehicle_control_schedule_software_update},
-    {CarServer_VehicleAction_setCabinOverheatProtectionAction_tag, build_set_cabin_overheat_protection}};
+    {CarServer_VehicleAction_setCabinOverheatProtectionAction_tag, build_set_cabin_overheat_protection},
+    {CarServer_VehicleAction_remoteSeatHeaterRequest_tag, build_remote_seat_heater_request},
+    {CarServer_VehicleAction_remoteSeatCoolerRequest_tag, build_remote_seat_cooler_request},
+    {CarServer_VehicleAction_mediaSendUpdateVolume_tag, build_media_send_update_volume}};
 
 // Builder implementations
 int VehicleActionBuilder::build_charging_set_limit(CarServer_VehicleAction &action, const void *data) {
@@ -387,6 +393,71 @@ int VehicleActionBuilder::build_set_cabin_overheat_protection(CarServer_VehicleA
   return TeslaBLE_Status_E_OK;
 }
 
+int VehicleActionBuilder::build_remote_seat_heater_request(CarServer_VehicleAction &action, const void *data) {
+  const SeatHeaterParams *params = require_data<SeatHeaterParams>(data, "Seat heater request requires SeatHeaterParams");
+  if (!params) {
+    return TeslaBLE_Status_E_ERROR_INVALID_PARAMS;
+  }
+
+  if (!ParameterValidator::is_valid_seat_position(params->seat_position)) {
+    LOG_ERROR("Invalid seat position: %d (must be 0-4)", params->seat_position);
+    return TeslaBLE_Status_E_ERROR_INVALID_PARAMS;
+  }
+  if (!ParameterValidator::is_valid_seat_level(params->level)) {
+    LOG_ERROR("Invalid seat heater level: %d (must be 0-3)", params->level);
+    return TeslaBLE_Status_E_ERROR_INVALID_PARAMS;
+  }
+
+  action.vehicle_action_msg.remoteSeatHeaterRequest = CarServer_HvacSeatHeaterActions_init_default;
+  action.vehicle_action_msg.remoteSeatHeaterRequest.hvac_seat_heater_actions_count = 1;
+  action.vehicle_action_msg.remoteSeatHeaterRequest.hvac_seat_heater_actions[0].seat_position =
+      static_cast<CarServer_HvacSeatHeaterAction_SeatPosition>(params->seat_position);
+  action.vehicle_action_msg.remoteSeatHeaterRequest.hvac_seat_heater_actions[0].seat_heater_level =
+      static_cast<CarServer_HvacSeatHeaterAction_HvacSeatHeaterLevel>(params->level);
+  return TeslaBLE_Status_E_OK;
+}
+
+int VehicleActionBuilder::build_remote_seat_cooler_request(CarServer_VehicleAction &action, const void *data) {
+  const SeatHeaterParams *params = require_data<SeatHeaterParams>(data, "Seat cooler request requires SeatHeaterParams");
+  if (!params) {
+    return TeslaBLE_Status_E_ERROR_INVALID_PARAMS;
+  }
+
+  if (!ParameterValidator::is_valid_seat_position(params->seat_position)) {
+    LOG_ERROR("Invalid seat position: %d (must be 0-4)", params->seat_position);
+    return TeslaBLE_Status_E_ERROR_INVALID_PARAMS;
+  }
+  if (!ParameterValidator::is_valid_seat_level(params->level)) {
+    LOG_ERROR("Invalid seat cooler level: %d (must be 0-3)", params->level);
+    return TeslaBLE_Status_E_ERROR_INVALID_PARAMS;
+  }
+
+  action.vehicle_action_msg.remoteSeatCoolerRequest = CarServer_HvacSeatCoolerActions_init_default;
+  action.vehicle_action_msg.remoteSeatCoolerRequest.hvac_seat_cooler_actions_count = 1;
+  action.vehicle_action_msg.remoteSeatCoolerRequest.hvac_seat_cooler_actions[0].seat_position =
+      static_cast<CarServer_HvacSeatCoolerAction_SeatPosition>(params->seat_position);
+  action.vehicle_action_msg.remoteSeatCoolerRequest.hvac_seat_cooler_actions[0].seat_cooler_level =
+      static_cast<CarServer_HvacSeatCoolerAction_HvacSeatCoolerLevel>(params->level);
+  return TeslaBLE_Status_E_OK;
+}
+
+int VehicleActionBuilder::build_media_send_update_volume(CarServer_VehicleAction &action, const void *data) {
+  const float *volume_ptr = require_data<float>(data, "Media update volume action requires float data");
+  if (!volume_ptr) {
+    return TeslaBLE_Status_E_ERROR_INVALID_PARAMS;
+  }
+
+  float volume = *volume_ptr;
+  if (!ParameterValidator::is_valid_volume(volume)) {
+    LOG_ERROR("Invalid volume: %.1f (must be 0-11)", volume);
+    return TeslaBLE_Status_E_ERROR_INVALID_PARAMS;
+  }
+
+  action.vehicle_action_msg.mediaSendUpdateVolume = CarServer_MediaSendUpdateVolume_init_default;
+  action.vehicle_action_msg.mediaSendUpdateVolume.volume = volume;
+  return TeslaBLE_Status_E_OK;
+}
+
 // Helper functions
 int VehicleActionBuilder::validate_input_parameters(const pb_byte_t *output_buffer, const size_t *output_length) {
   if (!output_buffer || !output_length) {
@@ -405,6 +476,18 @@ bool ParameterValidator::is_valid_charging_amps(int32_t amps) {
 
 bool ParameterValidator::is_valid_ping_value(int32_t ping_value) {
   return ping_value >= 0;  // Any non-negative value should be valid
+}
+
+bool ParameterValidator::is_valid_seat_position(int seat_position) {
+  return seat_position >= 0 && seat_position <= 4;  // 0=FrontLeft, 1=FrontRight, 2=RearLeft, 3=RearCenter, 4=RearRight
+}
+
+bool ParameterValidator::is_valid_seat_level(int level) {
+  return level >= 0 && level <= 3;  // 0=Off, 1=Low, 2=Med, 3=High
+}
+
+bool ParameterValidator::is_valid_volume(float volume) {
+  return volume >= 0.0f && volume <= 11.0f;
 }
 
 bool ParameterValidator::is_valid_vin(const char *vin) {

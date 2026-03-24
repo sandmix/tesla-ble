@@ -1252,6 +1252,78 @@ void TeslaBLE::Vehicle::set_media_volume(float volume) {
   send_infotainment_action_("Set Volume", CarServer_VehicleAction_mediaSendUpdateVolume_tag, volume);
 }
 
+void TeslaBLE::Vehicle::media_play() {
+  send_infotainment_action_("Media Play", CarServer_VehicleAction_mediaPlayAction_tag);
+}
+
+void TeslaBLE::Vehicle::media_next_track() {
+  send_infotainment_action_("Media Next Track", CarServer_VehicleAction_mediaNextTrack_tag);
+}
+
+void TeslaBLE::Vehicle::media_previous_track() {
+  send_infotainment_action_("Media Previous Track", CarServer_VehicleAction_mediaPreviousTrack_tag);
+}
+
+void TeslaBLE::Vehicle::media_next_favorite() {
+  send_infotainment_action_("Media Next Favorite", CarServer_VehicleAction_mediaNextFavorite_tag);
+}
+
+void TeslaBLE::Vehicle::media_previous_favorite() {
+  send_infotainment_action_("Media Previous Favorite", CarServer_VehicleAction_mediaPreviousFavorite_tag);
+}
+
+void TeslaBLE::Vehicle::set_cabin_overheat_protection(bool enable, bool fan_only) {
+  CarServer_SetCabinOverheatProtectionAction params = CarServer_SetCabinOverheatProtectionAction_init_default;
+  params.on = enable;
+  params.fan_only = fan_only;
+  send_command(UniversalMessage_Domain_DOMAIN_INFOTAINMENT,
+               enable ? "Cabin Overheat Protection On" : "Cabin Overheat Protection Off",
+               [params](Client *client, uint8_t *buff, size_t *len) {
+                 return client->build_car_server_vehicle_action_message(
+                     buff, len, CarServer_VehicleAction_setCabinOverheatProtectionAction_tag, &params);
+               });
+}
+
+void TeslaBLE::Vehicle::schedule_charging(bool enable, uint32_t scheduled_time) {
+  CarServer_ScheduledChargingAction params = CarServer_ScheduledChargingAction_init_default;
+  params.enabled = enable;
+  params.scheduled_time = scheduled_time;
+  send_command(UniversalMessage_Domain_DOMAIN_INFOTAINMENT,
+               enable ? "Schedule Charging On" : "Schedule Charging Off",
+               [params](Client *client, uint8_t *buff, size_t *len) {
+                 return client->build_car_server_vehicle_action_message(
+                     buff, len, CarServer_VehicleAction_scheduledChargingAction_tag, &params);
+               });
+}
+
+void TeslaBLE::Vehicle::schedule_software_update(int32_t offset_sec) {
+  send_infotainment_action_("Schedule Software Update",
+                            CarServer_VehicleAction_vehicleControlScheduleSoftwareUpdateAction_tag, offset_sec);
+}
+
+void TeslaBLE::Vehicle::cancel_software_update() {
+  send_infotainment_action_("Cancel Software Update",
+                            CarServer_VehicleAction_vehicleControlCancelSoftwareUpdateAction_tag);
+}
+
+void TeslaBLE::Vehicle::reset_valet_pin() {
+  send_infotainment_action_("Reset Valet PIN", CarServer_VehicleAction_vehicleControlResetValetPinAction_tag);
+}
+
+void TeslaBLE::Vehicle::reset_pin_to_drive() {
+  send_infotainment_action_("Reset PIN to Drive", CarServer_VehicleAction_vehicleControlResetPinToDriveAction_tag);
+}
+
+void TeslaBLE::Vehicle::reset_pin_to_drive_admin() {
+  send_infotainment_action_("Reset PIN to Drive (Admin)",
+                            CarServer_VehicleAction_vehicleControlResetPinToDriveAdminAction_tag);
+}
+
+void TeslaBLE::Vehicle::clear_speed_limit_pin_admin() {
+  send_infotainment_action_("Clear Speed Limit PIN (Admin)",
+                            CarServer_VehicleAction_drivingClearSpeedLimitPinAdminAction_tag);
+}
+
 // =============================================================================
 // Pairing and Key Management
 // =============================================================================
